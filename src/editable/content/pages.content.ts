@@ -3,16 +3,16 @@ import { slot4BrandConfig } from '@/editable/theme/brand.config'
 export const pagesContent = {
   home: {
     metadata: {
-      title: 'Stories, visuals, and discoverable content',
-      description: 'Explore articles, images, listings, and curated posts through a cleaner reading-first experience.',
-      openGraphTitle: 'Stories, visuals, and discoverable content',
-      openGraphDescription: 'Discover articles, visual posts, and connected content through a calmer reading-first experience.',
-      keywords: ['story platform', 'article site', 'visual content', 'content discovery'],
+      title: 'AlgoScholar — Ideas, insight and business discovery',
+      description: 'Read practical articles and discover businesses, products, and services in one independent publication.',
+      openGraphTitle: 'AlgoScholar — Read. Learn. Discover.',
+      openGraphDescription: 'Fresh perspectives, practical guides, and useful business listings.',
+      keywords: ['articles', 'business listings', 'practical guides', 'business discovery'],
     },
     hero: {
-      badge: 'Latest stories and visuals',
-      title: ['A thoughtful home for', 'stories, visuals, and discovery.'],
-      description: 'Explore fresh articles, image-led posts, and discoverable content across the platform through a calmer and clearer browsing experience.',
+      badge: 'Independent ideas • useful discoveries',
+      title: ['Read smarter.', 'Discover what matters.'],
+      description: 'Practical articles for curious readers and a focused directory for comparing businesses, products, and services.',
       primaryCta: { label: 'Read latest stories', href: '/article' },
       secondaryCta: { label: 'Explore visuals', href: '/image' },
       searchPlaceholder: 'Search stories, visuals, listings, and more',

@@ -129,22 +129,14 @@ export function TaskDetailView({ task, post, related, comments = [] }: { task: T
   )
 }
 
-// Yelp-style red star rating row. Uses real rating/review fields when present,
-// otherwise a stable derived value (wire to real data when available).
-const hashStr = (value: string) => {
-  let h = 0
-  for (let i = 0; i < value.length; i += 1) h = (h * 31 + value.charCodeAt(i)) >>> 0
-  return h
-}
 const ratingOf = (post: SitePost) => {
   const real = Number(getContent(post).rating)
-  if (real >= 1 && real <= 5) return Math.round(real * 10) / 10
-  return Math.round((3.7 + (hashStr(post.slug || post.id || post.title || 'x') % 13) / 10) * 10) / 10
+  return real >= 1 && real <= 5 ? Math.round(real * 10) / 10 : 0
 }
 const reviewsOf = (post: SitePost) => {
   const real = Number(getContent(post).reviewCount ?? getContent(post).reviews)
   if (real > 0) return Math.floor(real)
-  return 6 + (hashStr((post.slug || post.title || 'x') + 'r') % 480)
+  return 0
 }
 
 function DetailMeta({ post, category, center = false }: { post: SitePost; category?: string; center?: boolean }) {
@@ -152,13 +144,13 @@ function DetailMeta({ post, category, center = false }: { post: SitePost; catego
   const filled = Math.round(rating)
   return (
     <div className={`mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 ${center ? 'justify-center' : ''}`}>
-      <span className="inline-flex items-center gap-[3px]">
+      {rating ? <span className="inline-flex items-center gap-[3px]">
         {[0, 1, 2, 3, 4].map((i) => (
           <Star key={i} className={`h-[18px] w-[18px] ${i < filled ? 'fill-[var(--tk-accent)] text-[var(--tk-accent)]' : 'fill-[var(--tk-line)] text-[var(--tk-line)]'}`} />
         ))}
-      </span>
-      <span className="text-sm font-semibold text-[var(--tk-text)]">{rating.toFixed(1)}</span>
-      <span className="text-sm text-[var(--tk-muted)]">{reviewsOf(post)} reviews</span>
+      </span> : null}
+      {rating ? <span className="text-sm font-semibold text-[var(--tk-text)]">{rating.toFixed(1)}</span> : null}
+      {reviewsOf(post) ? <span className="text-sm text-[var(--tk-muted)]">{reviewsOf(post)} reviews</span> : null}
       {category ? (
         <>
           <span className="h-1 w-1 rounded-full bg-[var(--tk-muted)] opacity-50" />
@@ -220,21 +212,24 @@ function ListingDetail({ post, related }: { post: SitePost; related: SitePost[] 
   const website = getField(post, ['website', 'url'])
   const mapSrc = mapSrcFor(post)
   return (
-    <section className="mx-auto max-w-[var(--editable-container)] px-6 py-14 sm:py-20 lg:px-8">
+    <section className="mx-auto max-w-[var(--editable-container)] px-6 py-12 sm:py-16 lg:px-8">
       <BackLink task="listing" />
-      <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <article className="min-w-0">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-            <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-[var(--tk-radius)] border border-[var(--tk-line)] bg-[var(--tk-raised)]">
-              {logo ? <img src={logo} alt="" className="h-full w-full object-cover" /> : <Building2 className="h-12 w-12 text-[var(--tk-muted)]" />}
+      <div className="mt-7 overflow-hidden border border-[var(--tk-line)] bg-[var(--tk-surface)] shadow-[0_24px_70px_rgba(66,57,35,.09)]">
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="p-7 sm:p-10">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+              <div className="flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden border border-[var(--tk-line)] bg-[var(--tk-raised)] p-4">
+                {logo ? <img src={logo} alt={`${post.title} logo`} className="h-full w-full object-contain" /> : <Building2 className="h-12 w-12 text-[var(--tk-muted)]" />}
+              </div>
+              <div className="min-w-0"><Kicker task="listing">Verified directory entry</Kicker><h1 className="editable-display mt-4 text-4xl font-semibold leading-[1.02] tracking-[-0.03em] sm:text-5xl">{post.title}</h1><DetailMeta post={post} category={getField(post, ['category'])} /></div>
             </div>
-            <div className="min-w-0">
-              <Kicker task="listing">Business listing</Kicker>
-              <h1 className="editable-display mt-4 text-4xl font-semibold leading-[1.04] tracking-[-0.03em] sm:text-5xl">{post.title}</h1>
-              <DetailMeta post={post} category={getField(post, ['category'])} />
-            </div>
+            {leadText(post) ? <p className="mt-7 max-w-3xl text-lg leading-8 text-[var(--tk-muted)]">{leadText(post)}</p> : null}
           </div>
-          {leadText(post) ? <p className="mt-7 max-w-2xl text-lg leading-8 text-[var(--tk-muted)]">{leadText(post)}</p> : null}
+          <ContactAction website={website} phone={phone} email={email} featured />
+        </div>
+      </div>
+      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px]">
+        <article className="min-w-0">
           <InfoGrid items={[['Location', address, MapPin], ['Phone', phone, Phone], ['Email', email, Mail], ['Website', website, Globe2]]} />
           <Divider />
           <BodyContent post={post} />
@@ -242,7 +237,6 @@ function ListingDetail({ post, related }: { post: SitePost; related: SitePost[] 
         </article>
         <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
           {mapSrc ? <MapBox src={mapSrc} label={address || post.title} /> : null}
-          <ContactAction website={website} phone={phone} email={email} />
           <RelatedPanel task="listing" post={post} related={related} />
         </aside>
       </div>
@@ -293,7 +287,7 @@ function ClassifiedDetail({ post, related }: { post: SitePost; related: SitePost
 // ----- Image: a dark, gallery-led canvas -----
 function ImageDetail({ post, related }: { post: SitePost; related: SitePost[] }) {
   const images = getImages(post)
-  const gallery = images.length ? images : ['/placeholder.svg?height=900&width=1200']
+  const gallery = images.length ? images : ['/favicon.png?v=20260413']
   return (
     <>
       <section className="mx-auto max-w-[var(--editable-container)] px-6 py-14 sm:py-20 lg:px-8">
@@ -467,16 +461,17 @@ function MapBox({ src, label }: { src: string; label: string }) {
   )
 }
 
-function ContactAction({ website, phone, email, bare = false }: { website?: string; phone?: string; email?: string; bare?: boolean }) {
+function ContactAction({ website, phone, email, bare = false, featured = false }: { website?: string; phone?: string; email?: string; bare?: boolean; featured?: boolean }) {
   if (!website && !phone && !email) return null
   const buttons = (
-    <div className={`flex flex-wrap gap-2.5 ${bare ? 'justify-center' : ''}`}>
-      {website ? <Link href={website} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full bg-[var(--tk-accent)] px-4 py-2.5 text-sm font-semibold text-[var(--tk-on-accent)] transition hover:opacity-90">Website <ExternalLink className="h-4 w-4" /></Link> : null}
-      {phone ? <a href={`tel:${phone}`} className="inline-flex items-center gap-2 rounded-full border border-[var(--tk-line)] px-4 py-2.5 text-sm font-semibold transition hover:border-[var(--tk-accent)]"><Phone className="h-4 w-4" /> Call</a> : null}
-      {email ? <a href={`mailto:${email}`} className="inline-flex items-center gap-2 rounded-full border border-[var(--tk-line)] px-4 py-2.5 text-sm font-semibold transition hover:border-[var(--tk-accent)]"><Mail className="h-4 w-4" /> Email</a> : null}
+    <div className={`${featured ? 'grid gap-3' : 'flex flex-wrap gap-2.5'} ${bare ? 'justify-center' : ''}`}>
+      {website ? <Link href={website} target="_blank" rel="noreferrer" className={`${featured ? 'justify-between px-5 py-4' : 'rounded-full px-4 py-2.5'} inline-flex items-center gap-2 bg-[var(--tk-accent)] text-sm font-semibold text-[var(--tk-on-accent)] transition hover:opacity-90`}>Visit website <ExternalLink className="h-4 w-4" /></Link> : null}
+      {phone ? <a href={`tel:${phone}`} className={`${featured ? 'justify-between bg-[var(--tk-surface)] px-5 py-4' : 'rounded-full px-4 py-2.5'} inline-flex items-center gap-2 border border-[var(--tk-line)] text-sm font-semibold transition hover:border-[var(--tk-accent)]`}><span className="inline-flex items-center gap-2"><Phone className="h-4 w-4" /> Call business</span>{featured ? <ArrowUpRight className="h-4 w-4" /> : null}</a> : null}
+      {email ? <a href={`mailto:${email}`} className={`${featured ? 'justify-between bg-[var(--tk-surface)] px-5 py-4' : 'rounded-full px-4 py-2.5'} inline-flex items-center gap-2 border border-[var(--tk-line)] text-sm font-semibold transition hover:border-[var(--tk-accent)]`}><span className="inline-flex items-center gap-2"><Mail className="h-4 w-4" /> Send email</span>{featured ? <ArrowUpRight className="h-4 w-4" /> : null}</a> : null}
     </div>
   )
   if (bare) return <div className="mt-6">{buttons}</div>
+  if (featured) return <aside className="border-t border-[var(--tk-line)] bg-[var(--tk-raised)] p-7 sm:p-9 lg:border-l lg:border-t-0"><p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--tk-muted)]">Connect with this business</p><h2 className="editable-display mt-2 text-2xl font-semibold">Quick actions</h2><div className="mt-6">{buttons}</div><p className="mt-5 text-xs leading-5 text-[var(--tk-muted)]">Contact details are supplied by the listing publisher.</p></aside>
   return (
     <div className="rounded-[var(--tk-radius)] border border-[var(--tk-line)] bg-[var(--tk-surface)] p-6">
       <p className="text-xs font-medium uppercase tracking-[0.2em] text-[var(--tk-muted)]">Quick actions</p>
@@ -567,4 +562,3 @@ function RelatedCard({ task, post, grid = false }: { task: TaskKey; post: SitePo
     </Link>
   )
 }
-

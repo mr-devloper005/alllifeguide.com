@@ -32,7 +32,7 @@ const getImages = (post: SitePost) => {
   return [...media, ...images, ...(isUrl(image) ? [image] : []), ...(isUrl(logo) ? [logo] : [])].filter(Boolean).slice(0, 8)
 }
 
-const placeholder = '/placeholder.svg?height=900&width=1200'
+const placeholder = '/favicon.png?v=20260413'
 const getImage = (post: SitePost) => getImages(post)[0] || placeholder
 const getCategory = (post: SitePost, fallback: string) => asText(getContent(post).category) || post.tags?.[0] || fallback
 // Reduce any content payload — rich HTML, entity-encoded HTML, or plain text — to a clean
@@ -181,7 +181,7 @@ export function TaskArchiveView({ task, posts, pagination, category, basePath }:
 
 function ArchivePostCard({ post, task, basePath, index }: { post: SitePost; task: TaskKey; basePath: string; index: number }) {
   const href = `${basePath}/${post.slug}` || buildPostUrl(task, post.slug)
-  if (task === 'listing') return <ListingArchiveCard post={post} href={href} />
+  if (task === 'listing') return <ListingArchiveCard post={post} href={href} index={index} />
   if (task === 'classified') return <ClassifiedArchiveCard post={post} href={href} />
   if (task === 'image') return <ImageArchiveCard post={post} href={href} index={index} />
   if (task === 'sbm') return <BookmarkArchiveCard post={post} href={href} index={index} />
@@ -199,26 +199,19 @@ function CardArrow({ label }: { label: string }) {
   )
 }
 
-// Yelp-style red star ratings. Prefers real rating/review fields, falls back to
-// a stable derived value so the UI always reads well (wire to real data later).
-const hashStr = (value: string) => {
-  let h = 0
-  for (let i = 0; i < value.length; i += 1) h = (h * 31 + value.charCodeAt(i)) >>> 0
-  return h
-}
 const ratingOf = (post: SitePost) => {
   const real = Number(getContent(post).rating)
-  if (real >= 1 && real <= 5) return Math.round(real * 10) / 10
-  return Math.round((3.7 + (hashStr(post.slug || post.id || post.title || 'x') % 13) / 10) * 10) / 10
+  return real >= 1 && real <= 5 ? Math.round(real * 10) / 10 : 0
 }
 const reviewsOf = (post: SitePost) => {
   const real = Number(getContent(post).reviewCount ?? getContent(post).reviews)
   if (real > 0) return Math.floor(real)
-  return 6 + (hashStr((post.slug || post.title || 'x') + 'r') % 480)
+  return 0
 }
 
 function RatingLine({ post, center = false }: { post: SitePost; center?: boolean }) {
   const rating = ratingOf(post)
+  if (!rating) return null
   const filled = Math.round(rating)
   return (
     <div className={`mt-2.5 flex items-center gap-2 ${center ? 'justify-center' : ''}`}>
@@ -255,27 +248,29 @@ function ArticleArchiveCard({ post, href, index }: { post: SitePost; href: strin
   )
 }
 
-function ListingArchiveCard({ post, href }: { post: SitePost; href: string }) {
+function ListingArchiveCard({ post, href, index }: { post: SitePost; href: string; index: number }) {
   const logo = getImages(post)[0]
   const location = getField(post, ['location', 'address', 'city'])
   const phone = getField(post, ['phone', 'telephone', 'mobile'])
   const website = getField(post, ['website', 'url'])
   return (
-    <Link href={href} className={`${cardBase} flex items-center gap-5 p-5 sm:p-6`}>
-      <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[1rem] border border-[var(--tk-line)] bg-[var(--tk-raised)]">
-        {logo ? <img src={logo} alt="" className="h-full w-full object-cover" /> : <BriefcaseBusiness className="h-9 w-9 text-[var(--tk-muted)]" />}
+    <Link href={href} className={`${cardBase} relative grid min-h-[250px] overflow-hidden sm:grid-cols-[180px_minmax(0,1fr)]`}>
+      <div className="relative flex min-h-44 items-center justify-center overflow-hidden border-b border-[var(--tk-line)] bg-[var(--tk-raised)] p-8 sm:min-h-full sm:border-b-0 sm:border-r">
+        <span className="absolute left-4 top-4 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--tk-muted)]">Directory · {String(index + 1).padStart(2, '0')}</span>
+        {logo ? <img src={logo} alt={`${post.title} logo`} className="h-24 w-24 object-contain transition duration-500 group-hover:scale-105" /> : <BriefcaseBusiness className="h-12 w-12 text-[var(--tk-muted)]" />}
       </div>
-      <div className="min-w-0 flex-1">
-        <h2 className="editable-display truncate text-xl font-semibold tracking-[-0.02em]">{post.title}</h2>
+      <div className="flex min-w-0 flex-col p-6 sm:p-7">
+        <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--tk-accent)]">Business profile</span>
+        <h2 className="editable-display mt-3 text-2xl font-semibold leading-tight tracking-[-0.02em]">{post.title}</h2>
         <RatingLine post={post} />
-        <p className="mt-2 line-clamp-1 text-sm leading-6 text-[var(--tk-muted)]">{getSummary(post)}</p>
-        <div className="mt-3 flex flex-wrap gap-3 text-xs font-medium text-[var(--tk-muted)]">
+        <p className="mt-3 line-clamp-2 text-sm leading-6 text-[var(--tk-muted)]">{getSummary(post)}</p>
+        <div className="mt-auto flex flex-wrap gap-x-4 gap-y-2 border-t border-[var(--tk-line)] pt-4 text-xs font-medium text-[var(--tk-muted)]">
           {location ? <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-[var(--tk-accent)]" /> {location}</span> : null}
           {phone ? <span className="inline-flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-[var(--tk-accent)]" /> {phone}</span> : null}
           {website ? <span className="inline-flex items-center gap-1.5"><Globe className="h-3.5 w-3.5 text-[var(--tk-accent)]" /> Website</span> : null}
         </div>
+        <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[var(--tk-accent)]">View business <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-1 group-hover:-translate-y-1" /></span>
       </div>
-      <ArrowUpRight className="h-5 w-5 shrink-0 text-[var(--tk-muted)] transition group-hover:text-[var(--tk-accent)]" />
     </Link>
   )
 }
