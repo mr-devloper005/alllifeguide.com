@@ -89,12 +89,9 @@ function Stars({ rating, className = 'h-4 w-4' }: { rating: number; className?: 
 }
 
 function RatingRow({ post }: { post: SitePost }) {
-  const rating = ratingOf(post)
   return (
-    <div className="mt-2 flex items-center gap-2">
-      <Stars rating={rating} className="h-4 w-4" />
-      <span className="text-sm font-semibold text-[var(--slot4-page-text)]">{rating.toFixed(1)}</span>
-      <span className="text-sm text-[var(--slot4-muted-text)]">({reviewsOf(post)})</span>
+    <div className="mt-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--slot4-accent)]">
+      <span>{categoryOf(post) || 'Latest story'}</span><span className="h-1 w-1 bg-[var(--slot4-accent)]" /> <span className="text-[var(--slot4-muted-text)]">Editor’s desk</span>
     </div>
   )
 }
@@ -134,10 +131,10 @@ export function EditableHomeHero({ primaryTask, primaryRoute, posts, timeSection
   const pool = dedupePosts([...posts, ...timeSections.flatMap((section) => section.posts)])
   const heroImages = latestPostImages(pool)
   const heroTitle = pagesContent.home.hero.title?.join(' ') || `Discover the best of ${SITE_CONFIG.name}`
-  const categories = SITE_CONFIG.tasks.filter((task) => task.enabled).slice(0, 6)
+  const categories = SITE_CONFIG.tasks.filter((task) => task.enabled && task.key !== 'article').slice(0, 6)
 
   return (
-    <section className="relative">
+    <section className="editable-home-hero relative">
       <div className="relative h-[440px] w-full overflow-hidden sm:h-[520px] lg:h-[560px]">
         <EditableHeroCollage images={heroImages} />
         <div className="absolute inset-0 bg-black/25" />
@@ -198,11 +195,11 @@ export function EditableHomeHero({ primaryTask, primaryRoute, posts, timeSection
 
 /* -------------------------- Browse by category -------------------------- */
 export function EditableStoryRail({ primaryRoute }: HomeSectionProps) {
-  const categories = SITE_CONFIG.tasks.filter((task) => task.enabled)
+  const categories = SITE_CONFIG.tasks.filter((task) => task.enabled && task.key !== 'article')
   if (!categories.length) return null
   return (
     <section className="bg-[var(--slot4-surface-bg)]">
-      <div className={`py-12 sm:py-14 ${container}`}>
+      <div className={`editable-category-rail py-12 sm:py-14 ${container}`}>
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="text-2xl font-extrabold tracking-[-0.01em] sm:text-3xl">Browse by category</h2>
@@ -212,7 +209,7 @@ export function EditableStoryRail({ primaryRoute }: HomeSectionProps) {
             See all <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="editable-auto-rail mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {categories.map((task) => {
             const Icon = taskIcon[task.key] || FileText
             return (
